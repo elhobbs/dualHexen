@@ -99,15 +99,18 @@ int CapRGB(int x)
 //update hardware palette
 void DS_UpdatePalette(void)
 {
-	float scale = 8.0f;
+	//float scale = 8.0f;
 	int i = 0;
+	int irgb[3];
 
 	while (i < 256)
 	{
-		int irgb[3];
-		irgb[0] = CapRGB((int)(softPCScreenPal[i*3]/scale));
-		irgb[1] = CapRGB((int)(softPCScreenPal[(i*3)+1]/scale));
-		irgb[2] = CapRGB((int)(softPCScreenPal[(i*3)+2]/scale));
+		//irgb[0] = CapRGB((int)(softPCScreenPal[i*3]/scale));
+		//irgb[1] = CapRGB((int)(softPCScreenPal[(i*3)+1]/scale));
+		//irgb[2] = CapRGB((int)(softPCScreenPal[(i*3)+2]/scale));
+		irgb[0] = softPCScreenPal[i*3]>>3;
+		irgb[1] = softPCScreenPal[(i*3)+1]>>3;
+		irgb[2] = softPCScreenPal[(i*3)+2]>>3;
 
 		BG_PALETTE[i] = ((irgb[0])|(irgb[1]<<5)|(irgb[2]<<10)|(1<<15));
 #ifndef _DS_SUBDEBUG

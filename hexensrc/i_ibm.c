@@ -1589,12 +1589,12 @@ void I_SetPalette(byte *palette)
 	int i;
 	for(i = 0; i < 768; i++)
 	{
-		int r = palette[i]*(usegamma+1);
-		if (r > 255)
-		{
-			r = 255;
-		}
-		softPCScreenPal[i] = (byte)r;
+		//int r = palette[i]*(usegamma+1);
+		//if (r > 255)
+		//{
+		//	r = 255;
+		//}
+		softPCScreenPal[i] = gammatable[usegamma][*palette++];
 	}
 
 #ifdef _HEXENDS

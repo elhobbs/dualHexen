@@ -21,7 +21,7 @@ byte *subscreen;
 #endif
 
 int dirtybox[4];
-int usegamma;
+int usegamma = 0;
 
 byte gammatable[5][256] =
 {
@@ -155,7 +155,8 @@ void V_DrawFuzzPatch (int x, int y, patch_t *patch)
 	y -= SHORT(patch->topoffset);
 	x -= SHORT(patch->leftoffset);
 
-	if (x<0||x+SHORT(patch->width) >DRAWSCREENWIDTH || y<0 || y+SHORT(patch->height)>DRAWSCREENHEIGHT)
+	if (x<0||x+SHORT(patch->width) >DRAWSCREENWIDTH || y<0 || y+SHORT(patch->height)>DRAWSCREENHEIGHT
+)
 		//rww begin - FIXME
 		return;
 		//I_Error ("Bad V_DrawPatch");
@@ -213,7 +214,8 @@ void V_DrawAltFuzzPatch (int x, int y, patch_t *patch)
 	x -= SHORT(patch->leftoffset);
 
 	if (x<0||x+SHORT(patch->width) >DRAWSCREENWIDTH || y<0 
-		|| y+SHORT(patch->height)>DRAWSCREENHEIGHT)
+		|| y+SHORT(patch->height)>DRAWSCREENHEIGHT
+)
 	{	
 		//rww begin - FIXME
 		return;
@@ -272,7 +274,8 @@ void V_DrawShadowedPatch(int x, int y, patch_t *patch)
 	y -= SHORT(patch->topoffset);
 	x -= SHORT(patch->leftoffset);
 
-	if (x<0||x+SHORT(patch->width) >DRAWSCREENWIDTH || y<0 || y+SHORT(patch->height)>DRAWSCREENHEIGHT)
+	if (x<0||x+SHORT(patch->width) >DRAWSCREENWIDTH || y<0 || y+SHORT(patch->height)>DRAWSCREENHEIGHT
+)
 		//rww begin - FIXME
 		return;
 		//I_Error ("Bad V_DrawPatch");
