@@ -204,7 +204,7 @@ void DS_SwitchToConsoleMode(void)
 
 extern int detailLevel;
 //begin user code
-int main(void)
+int main(int argc, char **argv)
 {
 
 	lcdMainOnTop();
@@ -267,7 +267,7 @@ int main(void)
 	#endif
 
 	//hop into the old hexen loop logic
-	ibm_main(0, 0);
+	ibm_main(argc, argv);
 
 	//just in case
 	consolePrintf("Fatal error: Broke out of main loop.");
