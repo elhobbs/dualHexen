@@ -43,7 +43,7 @@ boolean DoubleSky;
 planefunction_t floorfunc, ceilingfunc;
 
 //rww begin
-int allowskydisplay = 0;
+int allowskydisplay = 1;
 //rww end
 
 // Opening
