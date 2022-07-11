@@ -1330,13 +1330,60 @@ byte        scantokey[128] =
 #ifdef _HEXENDS
 #define KEY_TAB				9
 
-static int key_prev = 0;
+/*static int key_prev = 0;
 static int key_curr = 0;
 #define key_poll() { key_prev=key_curr; key_curr = dsKeys; }
 #define key_transit(key) ((key_curr^key_prev) & key)
 #define key_held(key) (~(key_curr|key_prev) & key)
 #define key_hit(key) ((~key_curr&key_prev) & key)
-#define key_released(key) ((key_curr&~key_prev) & key)
+#define key_released(key) ((key_curr&~key_prev) & key)*/
+
+static unsigned int ds_keys_down_last = 0;
+static unsigned int ds_alt_down_last = 0;
+
+typedef struct {
+	unsigned int ds_key;
+	unsigned short key;
+} ds_key_t;
+
+static ds_key_t ds_keys[32] = {
+	{ KEY_UP, (unsigned short)KEY_UPARROW },
+	{ KEY_DOWN, (unsigned short)KEY_DOWNARROW },
+	{ KEY_LEFT, (unsigned short)KEY_LEFTARROW },
+	{ KEY_RIGHT, (unsigned short)KEY_RIGHTARROW },
+	{ KEY_L, (unsigned short)',' },
+	{ KEY_R, (unsigned short)'.' },
+	{ KEY_X, 0 },
+	{ KEY_B, (unsigned short)' ' },
+	{ KEY_Y, (unsigned short)'/' },
+	{ KEY_A, (unsigned short)KEY_RCTRL },
+	{ KEY_START, (unsigned short)KEY_ESCAPE },
+	{ KEY_START, (unsigned short)'m' },
+	{ KEY_A, (unsigned short)KEY_ENTER },
+	{ KEY_SELECT, (unsigned short)KEY_TAB },
+	{ KEY_B, (unsigned short)KEY_ESCAPE },
+	{ KEY_L|KEY_R, (unsigned short)'z' },
+	{0, 0}
+};
+
+static ds_key_t ds_alt_keys[32] = {
+	{ KEY_UP, (unsigned short)'u' },
+	{ KEY_DOWN, (unsigned short)'j' },
+	{ KEY_LEFT, (unsigned short)'[' },
+	{ KEY_RIGHT, (unsigned short)']' },
+	{ KEY_L, (unsigned short)'o' },
+	{ KEY_R, (unsigned short)'l' },
+	{ KEY_X, 0 },
+	{ KEY_B, (unsigned short)' ' },
+	{ KEY_Y, (unsigned short)'/' },
+	{ KEY_A, (unsigned short)KEY_RCTRL },
+	{ KEY_START, (unsigned short)KEY_ESCAPE },
+	{ KEY_START, (unsigned short)'m' },
+	{ KEY_A, (unsigned short)KEY_ENTER },
+	{ KEY_SELECT, (unsigned short)KEY_TAB },
+	{ KEY_B, (unsigned short)KEY_ESCAPE },
+	{0, 0}
+};
 
 void RegisterDSKey(unsigned short key, unsigned int up)
 {
@@ -1350,10 +1397,10 @@ void RegisterDSKey(unsigned short key, unsigned int up)
 }
 
 extern boolean gamekeydown[256];
-void CheckDSKey(unsigned int dsKeys, unsigned int dsKey, unsigned short key)
+void CheckDSKey(unsigned int keys_down,unsigned int last_down, unsigned int ds_key, unsigned short key)
 {
 	//don't depend on key events for game keys
-	if (dsKeys & dsKey)
+	if ((keys_down & ds_key) == ds_key)
 	{
 		gamekeydown[key] = true;
 	}
@@ -1363,11 +1410,11 @@ void CheckDSKey(unsigned int dsKeys, unsigned int dsKey, unsigned short key)
 	}
 
 	//send events as well
-	if (key_hit(dsKey))
+	if ((keys_down & ds_key) == ds_key && (last_down & ds_key) == 0)
 	{
 		RegisterDSKey(key, 0);
 	}
-	else if (key_released(dsKey))
+	else if ((keys_down & ds_key) == 0 && (last_down & ds_key) == ds_key)
 	{
 		RegisterDSKey(key, 1);
 	}
@@ -1375,7 +1422,7 @@ void CheckDSKey(unsigned int dsKeys, unsigned int dsKey, unsigned short key)
 
 void ibm_updatefromdskeys(unsigned int dsKeys)
 {
-	key_poll();
+	//key_poll();
 	/* Left hand touch
 	CheckDSKey(dsKeys, KEY_UP, (unsigned short)KEY_UPARROW);
 	CheckDSKey(dsKeys, KEY_B, (unsigned short)KEY_DOWNARROW);
@@ -1424,7 +1471,29 @@ void ibm_updatefromdskeys(unsigned int dsKeys)
 	CheckDSKey(dsKeys, KEY_SELECT, (unsigned short)KEY_TAB);
 	CheckDSKey(dsKeys, KEY_B, (unsigned short)KEY_ESCAPE);
 #else
-	CheckDSKey(dsKeys, KEY_UP, (unsigned short)KEY_UPARROW);
+	ds_key_t *ds_key;
+	unsigned int ds_keys_down = dsKeys;
+	unsigned int ds_alt_down = 0;
+
+	//in alt keys
+	if((dsKeys & KEY_X) ==  KEY_X) {
+		ds_keys_down = 0;
+		ds_alt_down = dsKeys;
+	}
+
+	for(ds_key = ds_alt_keys;ds_key->ds_key != 0; ds_key++) {
+		if(ds_key->key) {
+			CheckDSKey(ds_alt_down, ds_alt_down_last, ds_key->ds_key, ds_key->key);
+		}
+	}
+
+	for(ds_key = ds_keys;ds_key->ds_key != 0; ds_key++) {
+		if(ds_key->key) {
+			CheckDSKey(ds_keys_down, ds_keys_down_last, ds_key->ds_key, ds_key->key);
+		}
+	}
+	
+	/*CheckDSKey(dsKeys, KEY_UP, (unsigned short)KEY_UPARROW);
 	CheckDSKey(dsKeys, KEY_DOWN, (unsigned short)KEY_DOWNARROW);
 	CheckDSKey(dsKeys, KEY_LEFT, (unsigned short)KEY_LEFTARROW);
 	CheckDSKey(dsKeys, KEY_RIGHT, (unsigned short)KEY_RIGHTARROW);
@@ -1438,7 +1507,10 @@ void ibm_updatefromdskeys(unsigned int dsKeys)
 	CheckDSKey(dsKeys, KEY_START, (unsigned short)'m');
 	CheckDSKey(dsKeys, KEY_A, (unsigned short)KEY_ENTER);
 	CheckDSKey(dsKeys, KEY_SELECT, (unsigned short)KEY_TAB);
-	CheckDSKey(dsKeys, KEY_B, (unsigned short)KEY_ESCAPE);
+	CheckDSKey(dsKeys, KEY_B, (unsigned short)KEY_ESCAPE);*/
+
+	ds_keys_down_last = ds_keys_down;
+	ds_alt_down_last = ds_alt_down;
 #endif
 }
 #endif
@@ -2028,7 +2100,7 @@ void I_StartFrame (void)
 	//rww begin
 #ifdef _HEXENDS
 	scanKeys();
-	frameKeysHeld = keysHeld();
+	frameKeysHeld = keysCurrent();
 	ibm_updatefromdskeys(frameKeysHeld);
 	swiWaitForVBlank();
 	

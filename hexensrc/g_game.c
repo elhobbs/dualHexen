@@ -781,15 +781,15 @@ void G_BuildTiccmd (ticcmd_t *cmd)
 
 	// Fly up/down/drop keys
 	//rww begin
-	//if(gamekeydown[key_flyup])
-	if (gamekeydown[key_up] && gamekeydown[key_use])
+	if(gamekeydown[key_flyup])
+	//if (gamekeydown[key_up] && gamekeydown[key_use])
 	//rww end
 	{
 		flyheight = 5; // note that the actual flyheight will be twice this
 	}
 	//rww begin
-	//if(gamekeydown[key_flydown])
-	if (gamekeydown[key_down] && gamekeydown[key_use])
+	if(gamekeydown[key_flydown])
+	//if (gamekeydown[key_down] && gamekeydown[key_use])
 	//rww end
 	{
 		flyheight = -5;
