@@ -29,7 +29,13 @@
 
 #ifdef _HEXENDS //rww begin
 #include "../source/ds_defs.h"
+#include <unistd.h>
+#include <nds.h>
 #endif //rww end
+
+#ifdef ARM9
+#include "keyboard.h"
+#endif
 
 // MACROS ------------------------------------------------------------------
 
@@ -163,15 +169,44 @@ static execOpt_t ExecOptions[] =
 //==========================================================================
 void InitMapMusicInfo(void);
 
+void waitforit2( char *file, int line)
+{
+#ifdef _DS_SUBDEBUG
+
+	printf("\n%s:%d - press A...", file, line);
+	while (pmMainLoop())
+	{
+		swiWaitForVBlank();
+		printf(".");
+		if ((keysCurrent() & KEY_A) == 0) {
+			break;
+		}
+	}
+	while (pmMainLoop())
+	{
+		swiWaitForVBlank();
+		printf("+");
+		if ((keysCurrent() & KEY_A) != 0) {
+			break;
+		}
+	}
+	printf("done.\n");
+#endif
+}
+#define waitforit() waitforit2(__FILE__,__LINE__)
+
+
 void H2_Main(void)
 {
 	int p;
 
+	waitforit();
 	//rww begin - moved up
 	ST_Message("Z_Init: Init zone memory allocation daemon.\n");
 	Z_Init();
 	//rww end
 
+	waitforit();
 	M_FindResponseFile();
 	setbuf(stdout, NULL);
 	startepisode = 1;
@@ -180,20 +215,25 @@ void H2_Main(void)
 	startmap = 1;
 	shareware = false; // Always false for Hexen
 
+	waitforit();
 	HandleArgs();
 
 	// Initialize subsystems
 
+	waitforit();
 	ST_Message("V_Init: allocate screens.\n");
 	V_Init();
 
+	waitforit();
 	// Load defaults before initing other systems
 	ST_Message("M_LoadDefaults: Load system defaults.\n");
 	M_LoadDefaults(CONFIG_FILE_NAME);
 
+	waitforit();
 	// Now that the savedir is loaded from .CFG, make sure it exists
 	CreateSavePath();
 
+	waitforit();
 	// HEXEN MODIFICATION:
 	// There is a realloc() in W_AddFile() that might fail if the zone
 	// heap has been previously allocated, so we need to initialize the
@@ -206,19 +246,23 @@ void H2_Main(void)
 #endif
 
 	//rww begin
-//#ifdef __WATCOMC__
+	waitforit();
+	//#ifdef __WATCOMC__
 #if 1
 	I_StartupKeyboard();
 	//I_StartupJoystick();
 #endif
 	//rww end
 
+	waitforit();
 	ST_Message("MN_Init: Init menu system.\n");
 	MN_Init();
 
+	waitforit();
 	ST_Message("CT_Init: Init chat mode data.\n");
 	CT_Init();
 
+	waitforit();
 	InitMapMusicInfo();		// Init music fields in mapinfo
 
 #ifdef __WATCOMC__
@@ -226,28 +270,36 @@ void H2_Main(void)
 	S_InitScript();
 #endif
 
+	waitforit();
 	ST_Message("SN_InitSequenceScript: Registering sound sequences.\n");
 	SN_InitSequenceScript();
 	ST_Message("I_Init: Setting up machine state.\n");
 	I_Init();
 
+	waitforit();
 	ST_Message("ST_Init: Init startup screen.\n");
 	ST_Init();
 
+	waitforit();
 	S_StartSongName("orb", true);
 
+	waitforit();
 	// Show version message now, so it's visible during R_Init()
 	ST_Message("Executable: "VERSIONTEXT".\n");
 
+	waitforit();
 	ST_Message("R_Init: Init Hexen refresh daemon");
 	R_Init();
 	ST_Message("\n");
 
+	waitforit();
 	if (M_CheckParm("-net")) ST_NetProgress();	// Console player found
 
+	waitforit();
 	ST_Message("P_Init: Init Playloop state.\n");
 	P_Init();
 
+	waitforit();
 	// Check for command line warping. Follows P_Init() because the
 	// MAPINFO.TXT script must be already processed.
 	WarpCheck();
@@ -258,12 +310,15 @@ void H2_Main(void)
 			WarpMap, P_GetMapName(startmap), startmap, startskill+1);
 	}
 
+	waitforit();
 	ST_Message("D_CheckNetGame: Checking network game status.\n");
 	D_CheckNetGame();
 
+	waitforit();
 	ST_Message("SB_Init: Loading patches.\n");
 	SB_Init();
 	
+	waitforit();
 	CheckRecordFrom();
 
 	p = M_CheckParm("-record");
@@ -294,6 +349,7 @@ void H2_Main(void)
 		G_LoadGame(atoi(myargv[p+1]));
 	}
 
+	waitforit();
 	if(gameaction != ga_loadgame)
 	{
 		UpdateState |= I_FULLSCRN;
@@ -308,8 +364,11 @@ void H2_Main(void)
 			H2_StartTitle();
 		}
 	}
+	waitforit();
 	ST_Message("Entering main loop.\n");
 	H2_GameLoop(); // Never returns
+	/*
+	*/
 }
 
 //==========================================================================
@@ -529,8 +588,13 @@ static void ExecOptionMAXZONE(char **args, int tag)
 //rww begin
 extern void I_SetSoundTags(void);
 //rww end
+#ifdef WIN32 //rww begin
+int pmMainLoop(void) {
+	return 1;
+}
+#endif
 void H2_GameLoop(void)
-{
+{ 
 #ifndef _HEXENDS //rww begin
 	if(M_CheckParm("-debugfile"))
 	{
@@ -542,7 +606,7 @@ void H2_GameLoop(void)
 	//rww begin - moved
 	//I_InitGraphics();
 	//rww end
-	while(1)
+	while(pmMainLoop())
 	{
 		// Frame syncronous IO operations
 		I_StartFrame();
@@ -573,6 +637,8 @@ void H2_GameLoop(void)
 		I_SetSoundTags();
 		//rww end
 
+	/*
+	*/
 		DrawAndBlit();
 	}
 }
@@ -625,13 +691,14 @@ void H2_PostEvent(event_t *ev)
 //==========================================================================
 //rww begin
 extern byte *subscreenDest;
-int menuWasActive = 0;
+static int MenuActive_last = 0;;
+static int automapactive_last = 0;
 int lastMenuTic = 0;
 extern int ticcount;
+extern int keyboard_resized;
 //rww end
 static void DrawAndBlit(void)
 {
-	int drawMenu = 1;
 #ifdef _DS_PRINT_TIMINGS
 	int start, end;
 	start = DS_GetPrecisionTime();
@@ -651,18 +718,40 @@ static void DrawAndBlit(void)
 			{
 				break;
 			}
-			//rww begin
-			/*
-			if(automapactive)
+			if(automapactive != 0)
 			{
 				AM_Drawer();
 			}
-			else
-			{
-				R_RenderPlayerView(&players[displayplayer]);
+				
+
+			if (BorderNeedRefresh != 0 || MenuActive != 0 || MenuActive != MenuActive_last || keyboard_resized != 0 || (automapactive == 0 && automapactive != automapactive_last)) {
+				if (automapactive == 0) {
+					V_DrawRawScreen(W_CacheLumpName("TITLE", PU_CACHE));
+					//V_DrawPatch(34, 80, W_CacheLumpName("M_FSLOT", PU_CACHE));
+					//MN_DrTextA("TITLE == TRUE", 34 + 5, 80 + 5);
+				} 
+				//else {
+					//V_DrawPatch(34, 40, W_CacheLumpName("M_FSLOT", PU_CACHE));
+					//MN_DrTextA("TITLE == FALSE", 34 + 5, 80 + 5);
+				//}
+				SB_state = -1;
+				UpdateState |= I_FULLSCRN;
 			}
-			*/
-			if (lastMenuTic < ticcount)
+
+			R_RenderPlayerView(&players[displayplayer]);
+			//else if(1) {
+			//	V_DrawPatch(34, 80, W_CacheLumpName("M_FSLOT", PU_CACHE));
+			//	MN_DrTextA("TITLE == SKIP", 34 + 5, 80 + 5);
+			//}
+			//static char buf[512];
+			//sprintf(buf, "%X %X %X %X %X", MenuActive, MenuActive_last, automapactive, automapactive_last, ticcount);
+			//V_DrawPatch(34, 96, W_CacheLumpName("M_FSLOT", PU_CACHE));
+			//MN_DrTextA(buf, 34 + 5, 96 + 5);
+
+			MenuActive_last = MenuActive;
+			automapactive_last = automapactive;
+
+			/*if (lastMenuTic < ticcount)
 			{
 				if(automapactive)
 				{
@@ -693,7 +782,7 @@ static void DrawAndBlit(void)
 				drawMenu = 0;
 			}
 			R_RenderPlayerView(&players[displayplayer]);
-			//rww end
+			//rww end */
 			CT_Drawer();
 			UpdateState |= I_FULLVIEW;
 			SB_Drawer();
@@ -706,7 +795,7 @@ static void DrawAndBlit(void)
 			break;
 		case GS_DEMOSCREEN:
 			//rww begin
-			menuWasActive = 1;
+			MenuActive_last = -1;
 			//rww end
 			PageDrawer();
 			break;
@@ -728,15 +817,51 @@ static void DrawAndBlit(void)
 
 	// Draw current message
 	DrawMessage();
+	
+	extern boolean inventory;
 
 	// Draw Menu
-	if (drawMenu) //rww begin rww end
-	{
-		MN_Drawer();
+	MN_Drawer();
+	/*
+	for (int i = 0; i < 4; i++) {
+		V_DrawPatch(34, 16 + i*16, W_CacheLumpName("M_FSLOT", PU_CACHE));
 	}
+
+	if (MenuActive) {
+		MN_DrTextA("MENUACTIVE == TRUE", 34 + 5, 16 + 5);
+	}
+	else {
+		MN_DrTextA("MENUACTIVE == FALSE", 34 + 5, 16 + 5);
+	}
+	
+	if (automapactive) {
+		MN_DrTextA("AUTOMAPACTIVE == TRUE", 34 + 5, 32 + 5);
+	}
+	else {
+		MN_DrTextA("AUTOMAPACTIVE == FALSE", 34 + 5, 32 + 5);
+	}
+
+	if (MenuActive_last) {
+		MN_DrTextA("MENUACTIVE_LAST == TRUE", 34 + 5, 48 + 5);
+	}
+	else {
+		MN_DrTextA("MENUACTIVE_LAST == FALSE", 34 + 5, 48 + 5);
+	}
+
+	if (automapactive_last) {
+		MN_DrTextA("AUTOMAPACTIVE_LAST == TRUE", 34 + 5, 64 + 5);
+	}
+	else {
+		MN_DrTextA("AUTOMAPACTIVE_LAST == FALSE", 34 + 5, 64 + 5);
+	}
+	*/
 
 	// Send out any new accumulation
 	NetUpdate();
+
+#ifdef ARM9
+	keyboard_draw(UpdateState & I_FULLSCRN != 0 ? 1 : 0);
+#endif
 
 #ifdef _DS_PRINT_TIMINGS
 	end = DS_GetPrecisionTime();
@@ -760,6 +885,7 @@ static void DrawAndBlit(void)
 //
 //==========================================================================
 
+int draw_message_active = 0;
 static void DrawMessage(void)
 {
 	player_t *player;
@@ -769,6 +895,7 @@ static void DrawMessage(void)
 	{ // No message
 		return;
 	}
+	draw_message_active = 1;
 	if(player->yellowMessage)
 	{
 #ifdef _DS_RESOLUTION //rww begin
@@ -787,6 +914,7 @@ static void DrawMessage(void)
 		MN_DrTextA(player->message, 160-MN_TextAWidth(player->message)/2, 1);
 #endif
 	}
+	draw_message_active = 0;
 }
 
 //==========================================================================
@@ -1034,6 +1162,21 @@ static void CreateSavePath(void)
 #else
 		SavePath = "c:\\hexndata\\";
 #endif
+	}
+	int p = M_CheckParm("-savedir");
+	if (p && p < myargc - 1) {
+		len = strlen(myargv[p + 1]);
+		char* new_path = malloc(len + 10);
+		strcpy(new_path, myargv[p + 1]);
+		if (len > 0 && new_path[len-1] != '/') {
+			new_path[len] = '/';
+			new_path[len+1] = 0;
+		}
+		else {
+			I_Error("Bad save path parameters\n");
+		}
+
+		SavePath = new_path;
 	}
 	len = strlen(SavePath);
 	if (len >= 120) I_Error("Save path too long\n");

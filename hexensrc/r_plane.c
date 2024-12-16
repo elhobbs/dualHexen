@@ -47,7 +47,8 @@ int allowskydisplay = 1;
 //rww end
 
 // Opening
-visplane_t visplanes[MAXVISPLANES], *lastvisplane;
+visplane_t visplanes[MAXVISPLANES], * lastvisplane;
+//visplane_t *visplanes/*[MAXVISPLANES]*/, * lastvisplane;
 visplane_t *floorplane, *ceilingplane;
 short openings[MAXOPENINGS], *lastopening;
 
@@ -120,6 +121,8 @@ void R_InitSkyMap(void)
 
 void R_InitPlanes(void)
 {
+	//visplane_t visplanes[MAXVISPLANES], * lastvisplane;
+	//visplanes = (visplane_t*)malloc(sizeof(visplane_t) * MAXVISPLANES);
 }
 
 //==========================================================================

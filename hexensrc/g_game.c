@@ -147,7 +147,8 @@ fixed_t angleturn[3] = {640, 1280, 320};     // + slow turn
 
 #define NUMKEYS 256
 #ifdef _HEXENDS //rww begin
-boolean         gamekeydown[NUMKEYS] DTCM_DATA;
+//boolean         gamekeydown[NUMKEYS] DTCM_DATA;
+boolean         gamekeydown[NUMKEYS];
 #else
 boolean         gamekeydown[NUMKEYS];
 #endif //rww end
@@ -226,8 +227,8 @@ void TouchScreenSample(void)
 		return;
 	}
 
-	//touchRead(&touch); //2010
-	touch = touchReadXY();
+	touchRead(&touch); //2010
+	//touch = touchReadXY();
 
 	/*
 	// debugging
@@ -237,6 +238,8 @@ void TouchScreenSample(void)
 		P_SetMessage(&players[consoleplayer], tempstringyay, true);
 	}
 	*/
+
+	void RegisterDSKey(unsigned short key, unsigned int up);
 
 	// we touched in the statusbar area; don't count this touch for mouselook
 	if(touch.py > 160) {
@@ -1997,6 +2000,7 @@ void G_DoSaveGame(void)
 	gameaction = ga_nothing;
 	savedescription[0] = 0;
 	P_SetMessage(&players[consoleplayer], TXT_GAMESAVED, true);
+	BorderNeedRefresh = true;
 }
 
 //==========================================================================

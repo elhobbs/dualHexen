@@ -27,6 +27,7 @@
 		#include <direct.h>
 		#include <io.h>
 		#include <conio.h>
+		#include < fcntl.h >
 	#endif
 #endif //rww end
 

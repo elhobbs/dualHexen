@@ -1,29 +1,16 @@
+#include <calico/asm.inc>
 @hexenarm.s
 @rww - custom arm routines for hexends
-
-	.section .rodata
-
-	.align	4
-	.arm
 
 @==========================================================================
 @Math Functions
 @==========================================================================
-	.global HexenDivInt
-	.type HexenDivInt STT_FUNC
-	.global	FixedMul
-	.type FixedMul STT_FUNC
-	.global	FixedDiv
-	.type FixedDiv STT_FUNC
-	.global	FixedDiv2
-	.type FixedDiv2 STT_FUNC
 
 @=====================================
 @HexenDivInt/HexenDivIntU
 @regular int divide
 @=====================================
-.pool
-HexenDivInt:
+FUNC_START32 HexenDivInt
 	@set r12 to address of DIV_NUMERATOR32
 	ldr		r12, =67109520
 	
@@ -46,12 +33,13 @@ HexenDivInt:
 	ldr		r0, [r12, #16]
 		
 	bx		lr
+FUNC_END
 
 @=====================================
 @FixedMul
 @fast fixed multiply
 @=====================================
-FixedMul:
+FUNC_START32 FixedMul
 	smull	r2, r3, r0, r1
 	
 	@shift by FRACBITS
@@ -60,13 +48,13 @@ FixedMul:
 	orr		r0, r1, r2
 
 	bx		lr
+FUNC_END
 
 @=====================================
 @FixedDiv
 @bounds checking prefrace to FixedDiv2
 @=====================================
-.pool
-FixedDiv:
+FUNC_START32 FixedDiv
 	mov		r2, r0
 	mov		r3, r1
 	
@@ -89,12 +77,13 @@ FixedDiv:
 	movmi	r0, #2147483648
 	
 	bx		lr
+FUNC_END
 
 @=====================================
 @FixedDiv2
 @fast fixed divide
 @=====================================
-FixedDiv2:
+FUNC_START32 FixedDiv2
 	@store low 32 bits in r2
 	mov		r2, r0
 	
@@ -131,18 +120,11 @@ FixedDiv2:
 	ldr		r0, [r12, #16]
 
 	bx		lr
+FUNC_END
 
 @==========================================================================
 @Render Functions
 @==========================================================================
-	.global	R_DrawColumn
-	.type R_DrawColumn STT_FUNC
-	.global R_DrawSpan
-	.type R_DrawSpan STT_FUNC
-	.global	R_DrawColumnLow
-	.type R_DrawColumnLow STT_FUNC
-	.global R_DrawSpanLow
-	.type R_DrawSpanLow STT_FUNC
 
 	.extern	ylookup
 	.extern	columnofs
@@ -153,7 +135,7 @@ FixedDiv2:
 @R_DrawColumn
 @Source is the top of the column to scale
 @=====================================
-R_DrawColumn:
+FUNC_START32 R_DrawColumn
 	ldr		r0, =dc_drawdata
 	@set r2 to count, r1 to dc_yl (reused), check for negative range
 	ldr		r2, [r0, #8]
@@ -222,12 +204,13 @@ R_DrawColumn:
 	ldmfd	sp!, {r4, r5, r6}
 
 	bx		lr
+FUNC_END
 
 @=====================================
 @R_DrawSpan
 @floors, ceilings, etc
 @=====================================
-R_DrawSpan:
+FUNC_START32 R_DrawSpan
 	@put necessary registers on stack
 	stmfd	sp!, {r4, r5, r6, r7, r8}
 	
@@ -287,12 +270,13 @@ R_DrawSpan:
 	ldmfd	sp!, {r4, r5, r6, r7, r8}
 	
 	bx		lr
+FUNC_END
 
 @=====================================
 @R_DrawColumnLow
 @Source is the top of the column to scale
 @=====================================
-R_DrawColumnLow:
+FUNC_START32 R_DrawColumnLow
 	ldr		r0, =dc_drawdata
 	@set r2 to count, r1 to dc_yl (reused), check for negative range
 	ldr		r2, [r0, #8]
@@ -354,7 +338,7 @@ R_DrawColumnLow:
 
 	@store result from dc_colormap in dest
 	@low detail version stuffs the same byte into two pixels
-	@to avoid two strb's, shift the 8 bits of r6 into the next 8 bits and strh
+	@to avoid two strbs, shift the 8 bits of r6 into the next 8 bits and strh
 	mov		r0, r6, lsl #8
 	orr		r6, r6, r0
 	strh	r6, [r3]
@@ -370,12 +354,13 @@ R_DrawColumnLow:
 	ldmfd	sp!, {r4, r5, r6}
 
 	bx		lr
+FUNC_END
 
 @=====================================
 @R_DrawSpanLow
 @floors, ceilings, etc
 @=====================================
-R_DrawSpanLow:
+FUNC_START32 R_DrawSpanLow
 	@put necessary registers on stack
 	stmfd	sp!, {r4, r5, r6, r7, r8}
 	
@@ -428,7 +413,7 @@ R_DrawSpanLow:
 	ldrb	r0, [r7, r0]
 	
 	@store the same byte and increment by 2 for low detail version
-	@to avoid two strb's, shift the 8 bits of r0 into the next 8 bits and strh
+	@to avoid two strbs, shift the 8 bits of r0 into the next 8 bits and strh
 	mov		r12, r0, lsl #8
 	orr		r0, r0, r12
 	strh	r0, [r2]
@@ -446,5 +431,4 @@ R_DrawSpanLow:
 	
 	bx		lr
 
-	.align
-	.end
+FUNC_END

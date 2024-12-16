@@ -17,7 +17,8 @@
 #ifndef _HEXENDS
 #define MODULE_DTCM_DATA
 #else
-#define MODULE_DTCM_DATA DTCM_DATA
+//#define MODULE_DTCM_DATA DTCM_DATA
+#define MODULE_DTCM_DATA
 #endif
 //rww end
 
@@ -672,6 +673,9 @@ void R_DrawViewBorder (void)
 	
 	if (scaledviewwidth == SCREENWIDTH)
 		return;
+	extern int draw_message_active;
+	int draw_message_active_old = draw_message_active;
+	draw_message_active = 1;
 
 	src = W_CacheLumpName("F_022", PU_CACHE);
 	dest = screen;
@@ -709,6 +713,7 @@ void R_DrawViewBorder (void)
 		W_CacheLumpName("bordbr", PU_CACHE));
 	V_DrawPatch(viewwindowx-4, viewwindowy+viewheight, 
 		W_CacheLumpName("bordbl", PU_CACHE));
+	draw_message_active = draw_message_active_old;
 }
 
 /*

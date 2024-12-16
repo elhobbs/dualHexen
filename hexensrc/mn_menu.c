@@ -94,6 +94,7 @@ static void SCWarpLevel(int option);
 static void SCWarpGo(int option);
 static void DrawDSMenu(void);
 static void DrawWarpMenu(void);
+static void SCKeyboard(int option);
 //rww end
 static void InitFonts(void);
 static void SetMenu(MenuType_t menu);
@@ -153,7 +154,7 @@ static boolean soundchanged;
 
 boolean askforquit;
 boolean typeofask;
-static boolean FileMenuKeySteal;
+/*static*/boolean FileMenuKeySteal;
 static boolean slottextloaded;
 static char SlotText[6][SLOTTEXTLEN+2];
 static char oldSlotText[SLOTTEXTLEN+2];
@@ -333,14 +334,16 @@ static MenuItem_t DSItems[] =
 	{ ITT_LRFUNC, "GAMMA", SCGamma, 0, MENU_NONE },
 	{ ITT_EMPTY, NULL, NULL, 0, MENU_NONE },
 	{ ITT_SETMENU, "WARP...", NULL, 0, MENU_WARP },
-	{ ITT_EFUNC, "GIVE ALL", SCGiveAll, 0, MENU_NONE }
+	{ ITT_EFUNC, "GIVE ALL", SCGiveAll, 0, MENU_NONE },
+	{ ITT_LRFUNC, "KEYBOARD", SCKeyboard, 0, MENU_NONE },
+	{ ITT_EMPTY, NULL, NULL, 0, MENU_NONE }
 };
 
 static Menu_t DSMenu =
 {
 	88, 30,
 	DrawDSMenu,
-	5, DSItems,
+	7, DSItems,
 	0,
 	MENU_MAIN
 };
@@ -437,7 +440,7 @@ void MN_DrTextA(char *text, int x, int y)
 	//rww begin
 	if (MenuActive)
 	{
-		return;
+		//return;
 	}
 	//rww end
 
@@ -451,8 +454,8 @@ void MN_DrTextA(char *text, int x, int y)
 		{
 			p = W_CacheLumpNum(FontABaseLump+c-33, PU_CACHE);
 			//rww begin
-			//V_DrawPatch(x, y, p);
-			V_DrawPatchPrimary(x, y, p);
+			V_DrawPatch(x, y, p);
+			//V_DrawPatchPrimary(x, y, p);
 			//rww end
 			x += p->width-1;
 		}
@@ -729,7 +732,11 @@ static void DrawMainMenu(void)
 	int frame;
 
 	frame = (MenuTime/5)%7;
-	V_DrawPatch(88, 0, W_CacheLumpName("M_HTIC", PU_CACHE));
+	
+	extern boolean    automapactive;
+	if (automapactive != 0) {
+		V_DrawPatch(88, 0, W_CacheLumpName("M_HTIC", PU_CACHE));
+	}
 // Old Gold skull positions: (40, 10) and (232, 10)
 	V_DrawPatch(37, 80, W_CacheLumpNum(MauloBaseLump+(frame+2)%7, 
 		PU_CACHE));
@@ -885,6 +892,14 @@ static void DrawFileSlots(Menu_t *menu)
 
 	x = menu->x;
 	y = menu->y;
+
+	if (FileMenuKeySteal) {
+		y = 40;
+		V_DrawPatch(x, y, W_CacheLumpName("M_FSLOT", PU_CACHE));
+		MN_DrTextA(SlotText[currentSlot], x + 5, y + 5);
+		return;
+	}
+
 	for(i = 0; i < 6; i++)
 	{
 		V_DrawPatch(x, y, W_CacheLumpName("M_FSLOT", PU_CACHE));
@@ -893,7 +908,7 @@ static void DrawFileSlots(Menu_t *menu)
 #ifdef _HEXENDS
 			// changing to font B, even though it doesn't look quite right,
 			// because font A is invisible on my DS for some reason - Dopefish
-			MN_DrTextB(SlotText[i], x+5, y+5);
+			MN_DrTextA(SlotText[i], x+5, y+5);
 #else
 			MN_DrTextA(SlotText[i], x+5, y+5);
 #endif
@@ -904,6 +919,7 @@ static void DrawFileSlots(Menu_t *menu)
 
 //rww begin
 extern int allowskydisplay;
+extern int	keyboard_visible; //0=hidden,1=fullsize,2=mini - numbers only
 static void DrawDSMenu(void)
 {
 	DrawSlider(&DSMenu, 2, 5, usegamma);
@@ -916,6 +932,7 @@ static void DrawDSMenu(void)
 	{
 		MN_DrTextB("OFF", 196, 30);
 	}
+	DrawSlider(&DSMenu, 6, 3, keyboard_visible);
 }
 
 static int warpToLevel = 1;
@@ -1189,6 +1206,7 @@ static void SCSaveGame(int option)
 	if(!FileMenuKeySteal)
 	{
 		FileMenuKeySteal = true;
+		keyboard_visible = 1;
 		strcpy(oldSlotText, SlotText[option]);
 		ptr = SlotText[option];
 		while(*ptr)
@@ -1354,6 +1372,21 @@ static void SCMouseSensi(int option)
 	else if(mouseSensitivity)
 	{
 		mouseSensitivity--;
+	}
+}
+
+static void SCKeyboard(int option) {
+
+	if (option == RIGHT_DIR)
+	{
+		if (keyboard_visible < 2)
+		{
+			keyboard_visible++;
+		}
+	}
+	else if (keyboard_visible)
+	{
+		keyboard_visible--;
 	}
 }
 
@@ -1774,7 +1807,7 @@ boolean MN_Responder(event_t *event)
 
 	if(MenuActive == false)
 	{
-		if(key == 'm' || gamestate == GS_DEMOSCREEN || demoplayback) //Sektor
+		if(key == KEY_ESCAPE || gamestate == GS_DEMOSCREEN || demoplayback) //Sektor
 		{
 			MN_ActivateMenu();
 			return(true);
@@ -1890,7 +1923,11 @@ boolean MN_Responder(event_t *event)
 	else
 	{ // Editing file names
 		textBuffer = &SlotText[currentSlot][slotptr];
+#ifdef WIN32
+		if (key == KEY_BACKSPACE || key == 8)
+#else
 		if(key == KEY_BACKSPACE)
+#endif
 		{
 			if(slotptr)
 			{
@@ -1925,13 +1962,23 @@ boolean MN_Responder(event_t *event)
 		}
 		if(slotptr < SLOTTEXTLEN && key != KEY_BACKSPACE)
 		{
-			if((key >= 'a' && key <= 'z'))
+#ifdef WIN32
+			if((tolower(key) >= 'a' && tolower(key) <= 'z'))
 			{
-				*textBuffer++ = key-32;
+				*textBuffer++ = tolower(key)-32;
 				*textBuffer = ASCII_CURSOR;
 				slotptr++;
 				return(true);
 			}
+#else
+			if ((key >= 'a' && key <= 'z'))
+			{
+				*textBuffer++ = key - 32;
+				*textBuffer = ASCII_CURSOR;
+				slotptr++;
+				return(true);
+			}
+#endif
 			if(((key >= '0' && key <= '9') || key == ' '
 				|| key == ',' || key == '.' || key == '-')
 				&& !shiftdown)
@@ -1969,6 +2016,9 @@ void MN_ActivateMenu(void)
 	if(paused)
 	{
 		S_ResumeSound();
+	}
+	if (keyboard_visible == 1) {
+		keyboard_visible = 2;
 	}
 	MenuActive = true;
 	FileMenuKeySteal = false;

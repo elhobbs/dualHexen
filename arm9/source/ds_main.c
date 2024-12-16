@@ -11,6 +11,10 @@
 #endif
 
 #include "ds_defs.h"
+#include "h2def.h"
+#include "keyboard.h"
+
+typedef unsigned char byte;
 
 #ifdef _DS_RESOLUTION
 #define	H2SCREENWIDTH		256
@@ -126,7 +130,8 @@ int DS_GetH2Tics(void) {
 //	float f = (float)i;
 //	return (int)(f*0.035f);
 	//not exact but faster.
-	return ((TIMER1_DATA*(1<<16))+TIMER0_DATA)/914;
+	//return ((TIMER1_DATA*(1<<16))+TIMER0_DATA)/914;
+	return (cpuGetTiming()>>16)/15;
 }
 
 #ifdef _DS_PRINT_TIMINGS
@@ -145,17 +150,37 @@ void DS_SoftToScreen(int subchanged)
 	#ifndef _DS_SUBDEBUG
 	if (subchanged)
 	{
+#if 0
 		uint8 *out = (uint8 *)BG_BMP_RAM_SUB(0);
 		uint8 *in = (uint8 *)softSubPCScreenBuffer;
 		int h = 0;
 		while (h < H2DRAWSCREENHEIGHT)
 		{
-			dmaCopyWords(1, in, out, H2DRAWSCREENWIDTH);
+			int dmac = (h & 1) + 1;
+			while (DMA_CR(dmac) & DMA_BUSY);
+			dmaCopyWordsAsynch(dmac, in, out, H2DRAWSCREENWIDTH);
 			out += 512;
 			in += H2DRAWSCREENWIDTH;
 
 			h++;
 		}
+#else
+		uint8* out = (uint8*)BG_BMP_RAM_SUB(0);
+		uint8* in = (uint8*)softSubPCScreenBuffer;
+		in += (320 - 256) / 2;
+		in += ((200 - 192) / 2) * H2DRAWSCREENWIDTH;
+		int h = 0;
+		while (h < 192)
+		{
+			int dmac = (h & 1) + 1;
+			while (DMA_CR(dmac) & DMA_BUSY);
+			dmaCopyWordsAsynch(dmac, in, out, 256);
+			out += 512;
+			in += H2DRAWSCREENWIDTH;
+
+			h++;
+		}
+#endif
 	}
 	#endif
 #else
@@ -212,6 +237,7 @@ int main(int argc, char **argv)
 
 	lcdMainOnTop();
 	soundEnable(); //elhobbs
+	//setCpuClock(true);
 	
 	// IRQ basic setup
 	// 2010 irqInitHandler(on_irq);
@@ -227,13 +253,18 @@ int main(int argc, char **argv)
 
 #ifdef _DS_SUBDEBUG
 	//setup the sub display
-	videoSetModeSub(MODE_0_2D|DISPLAY_BG0_ACTIVE);
-	vramSetBankC(VRAM_C_SUB_BG);
-	REG_BG0CNT_SUB = BG_MAP_BASE(31);
-	BG_PALETTE_SUB[255] = RGB15(31,31,31);
+	//videoSetModeSub(MODE_0_2D|DISPLAY_BG0_ACTIVE);
+	//vramSetBankC(VRAM_C_SUB_BG);
+	//REG_BG0CNT_SUB = BG_MAP_BASE(31);
+	//BG_PALETTE_SUB[255] = RGB15(31,31,31);
 
 	//init debug console
-	consoleInitDefault((u16*)SCREEN_BASE_BLOCK_SUB(31), (u16*)CHAR_BASE_BLOCK_SUB(0), 16);
+	//consoleInitDefault((u16*)SCREEN_BASE_BLOCK_SUB(31), (u16*)CHAR_BASE_BLOCK_SUB(0), 16);
+	
+	videoSetModeSub(MODE_0_2D);
+	vramSetBankC(VRAM_C_SUB_BG);
+	consoleInit(0, 0, BgType_Text4bpp, BgSize_T_256x256, 31, 0, false, true);
+
 #else
 	videoSetModeSub(MODE_5_2D|DISPLAY_BG3_ACTIVE);
 	vramSetBankC(VRAM_C_SUB_BG);
@@ -241,13 +272,14 @@ int main(int argc, char **argv)
 
 	REG_BG3PB_SUB = 0;
 	REG_BG3PC_SUB = 0;
-	REG_BG3PA_SUB = 256+64;
-	REG_BG3PD_SUB = 256+12;
+	REG_BG3PA_SUB = 256;// +64;
+	REG_BG3PD_SUB = 256;// +12;
 #endif
 
 	//enable timers for keeping track of a normal time value every frame.
-	TIMER0_CR = TIMER_ENABLE|TIMER_DIV_1024;
-	TIMER1_CR = TIMER_ENABLE|TIMER_CASCADE;
+	//TIMER0_CR = TIMER_ENABLE|TIMER_DIV_1024;
+	//TIMER1_CR = TIMER_ENABLE|TIMER_CASCADE;
+	cpuStartTiming(0);
 
 	detailLevel = 0;//1;
 
@@ -269,8 +301,33 @@ int main(int argc, char **argv)
 		fatInitDefault();
 	#endif
 
+		keyboard_init();
+		/*
+		void waitforit2(char* file, int line);
+#define waitforit() waitforit2(__FILE__,__LINE__)
+
+		waitforit();
+		u32 cpu_ticks, cpu_ticks_last;
+		
+		cpu_ticks_last = cpuGetTiming();
+
+		while (pmMainLoop())
+		{
+			swiWaitForVBlank();
+			cpu_ticks = cpuGetTiming();
+			printf("ticks: %6d %8d\n", cpu_ticks - cpu_ticks_last, cpu_ticks);
+			if ((keysCurrent() & KEY_START) != 0) {
+				break;
+			}
+			cpu_ticks_last = cpu_ticks;
+		}
+		*/
+
+
 	//hop into the old hexen loop logic
 	ibm_main(argc, argv);
+
+	return 0;
 
 	//just in case
 	consolePrintf("Fatal error: Broke out of main loop.");

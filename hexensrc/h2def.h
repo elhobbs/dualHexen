@@ -70,6 +70,8 @@ void ds_free(void *ptr);
 #define VERSIONTEXT "Version 1.1 "__DATE__" ("VER_ID")"
 #endif
 
+typedef unsigned char byte;
+
 // all exterior data is defined here
 #include "xddefs.h"
 
@@ -113,6 +115,8 @@ extern byte *destview, *destscreen;	// PC direct to screen pointers
 #define	KEY_RCTRL			(0x80+0x1d)
 #define	KEY_RALT			(0x80+0x38)
 
+#define	KEY_LSHIFT			KEY_RSHIFT
+#define	KEY_LCTRL			KEY_RCTRL
 #define	KEY_LALT			KEY_RALT
 
 #define KEY_FIVE			0x35

@@ -77,6 +77,9 @@ void ibm_main(int argc, char **argv)
 {
 	myargc = argc;
 	myargv = argv;
+	void waitforit2(char* file, int line);
+
+	waitforit2(__FILE__, __LINE__);
 	H2_Main();
 }
 
@@ -1357,11 +1360,11 @@ static ds_key_t ds_keys[32] = {
 	{ KEY_B, (unsigned short)' ' },
 	{ KEY_Y, (unsigned short)'/' },
 	{ KEY_A, (unsigned short)KEY_RCTRL },
-	{ KEY_START, (unsigned short)KEY_ESCAPE },
-	{ KEY_START, (unsigned short)'m' },
-	{ KEY_A, (unsigned short)KEY_ENTER },
-	{ KEY_SELECT, (unsigned short)KEY_TAB },
-	{ KEY_B, (unsigned short)KEY_ESCAPE },
+	{ KEY_START, (unsigned short)KEY_ENTER },
+	//{ KEY_START, (unsigned short)'m' },
+	//{ KEY_A, (unsigned short)KEY_ENTER },
+	{ KEY_SELECT, (unsigned short)KEY_ESCAPE },
+	//{ KEY_B, (unsigned short)KEY_ESCAPE },
 	{ KEY_L|KEY_R, (unsigned short)'z' },
 	{0, 0}
 };
@@ -1377,11 +1380,11 @@ static ds_key_t ds_alt_keys[32] = {
 	{ KEY_B, (unsigned short)' ' },
 	{ KEY_Y, (unsigned short)'/' },
 	{ KEY_A, (unsigned short)KEY_RCTRL },
-	{ KEY_START, (unsigned short)KEY_ESCAPE },
-	{ KEY_START, (unsigned short)'m' },
-	{ KEY_A, (unsigned short)KEY_ENTER },
-	{ KEY_SELECT, (unsigned short)KEY_TAB },
-	{ KEY_B, (unsigned short)KEY_ESCAPE },
+	{ KEY_START, (unsigned short)KEY_ENTER },
+	//{ KEY_START, (unsigned short)'m' },
+	//{ KEY_A, (unsigned short)KEY_ENTER },
+	{ KEY_L | KEY_R, (unsigned short)KEY_TAB },
+	//{ KEY_B, (unsigned short)KEY_ESCAPE },
 	{0, 0}
 };
 
@@ -1410,11 +1413,11 @@ void CheckDSKey(unsigned int keys_down,unsigned int last_down, unsigned int ds_k
 	}
 
 	//send events as well
-	if ((keys_down & ds_key) == ds_key && (last_down & ds_key) == 0)
+	if ((keys_down & ds_key) == ds_key && (last_down & ds_key) != ds_key)
 	{
 		RegisterDSKey(key, 0);
 	}
-	else if ((keys_down & ds_key) == 0 && (last_down & ds_key) == ds_key)
+	else if ((keys_down & ds_key) != ds_key && (last_down & ds_key) == ds_key)
 	{
 		RegisterDSKey(key, 1);
 	}
@@ -2099,10 +2102,13 @@ void I_StartFrame (void)
 {
 	//rww begin
 #ifdef _HEXENDS
+	void keyboard_input();
+
 	scanKeys();
+	keyboard_input();
 	frameKeysHeld = keysCurrent();
 	ibm_updatefromdskeys(frameKeysHeld);
-	swiWaitForVBlank();
+	//swiWaitForVBlank();
 	
 	/*
 	if(keysHeld() & KEY_X)

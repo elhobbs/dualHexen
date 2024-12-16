@@ -44,20 +44,22 @@ byte gammatable[5][256] =
 //
 //---------------------------------------------------------------------------
 
-void V_DrawPatch(int x, int y, patch_t *patch)
+extern int draw_message_active;
+
+void V_DrawPatch(int x, int y, patch_t* patch)
 {
 	int count;
 	int col;
-	column_t *column;
-	byte *desttop;
-	byte *dest;
-	byte *source;
+	column_t* column;
+	byte* desttop;
+	byte* dest;
+	byte* source;
 	int w;
 
 	y -= SHORT(patch->topoffset);
 	x -= SHORT(patch->leftoffset);
-	if(x < 0 || x+SHORT(patch->width) > DRAWSCREENWIDTH || y < 0
-		|| y+SHORT(patch->height) > DRAWSCREENHEIGHT)
+	if (x < 0 || x + SHORT(patch->width) > DRAWSCREENWIDTH || y < 0
+		|| y + SHORT(patch->height) > DRAWSCREENHEIGHT)
 	{
 		//rww begin - FIXME
 		return;
@@ -66,7 +68,11 @@ void V_DrawPatch(int x, int y, patch_t *patch)
 	}
 	col = 0;
 #ifdef _DS_RESOLUTION
-	desttop = subscreen+y*DRAWSCREENWIDTH+x;
+	if (draw_message_active) {
+		V_DrawPatchPrimary(x,y,patch);
+		return;
+	}
+	desttop = subscreen + y * DRAWSCREENWIDTH + x;
 #else
 	desttop = screen+y*DRAWSCREENWIDTH+x;
 #endif

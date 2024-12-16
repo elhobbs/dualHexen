@@ -26,7 +26,8 @@
 #ifndef _HEXENDS
 #define MODULE_DTCM_DATA
 #else
-#define MODULE_DTCM_DATA DTCM_DATA
+//#define MODULE_DTCM_DATA DTCM_DATA
+#define MODULE_DTCM_DATA
 #endif
 
 void *W_CacheLumpNumTexture(texture_t *tex, int lump, int tag, int texRefresh);

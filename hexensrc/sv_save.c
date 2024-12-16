@@ -266,7 +266,7 @@ static thinkInfo_t ThinkerInfo[] =
 //
 //==========================================================================
 
-void SV_SaveGame(int slot, char *description)
+void SV_SaveGame(int slot, char* description)
 {
 #ifndef _HEXENDS_GBFS //rww begin FIXME
 	char fileName[100];
@@ -279,14 +279,16 @@ void SV_SaveGame(int slot, char *description)
 #ifdef _HEXENDS
 	// ideally we'd use a touchscreen keyboard to let the user name their saves.
 	// instead, lets just tag it with the current date & time
-	time_t timestamp = time(NULL);
-	struct tm *today;
-	char temp[20];
-	today = localtime(&timestamp);
-	sprintf(temp, "%02d/%02d/%d %d:%02d%02d",
-		today->tm_mon + 1, today->tm_mday, today->tm_year + 1900,
-	   	today->tm_hour, today->tm_min, today->tm_sec);
-	description = temp;
+	if (description == 0 || *description == 0) {
+		time_t timestamp = time(NULL);
+		struct tm* today;
+		char temp[20];
+		today = localtime(&timestamp);
+		sprintf(temp, "%02d/%02d/%d %d:%02d%02d",
+			today->tm_mon + 1, today->tm_mday, today->tm_year + 1900,
+			today->tm_hour, today->tm_min, today->tm_sec);
+		description = temp;
+	}
 #endif
 
 	// Write game save description

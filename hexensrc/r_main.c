@@ -853,14 +853,25 @@ frame++;
 ==============
 */
 
+void waitforit2(char* file, int line);
+#define waitforit() waitforit2(__FILE__,__LINE__)
+
+
 void R_RenderPlayerView (player_t *player)
 {
-	R_SetupFrame (player);
+	waitforit();
+	R_SetupFrame(player);
+	waitforit();
 	R_ClearClipSegs ();
+	waitforit();
 	R_ClearDrawSegs ();
+	waitforit();
 	R_ClearPlanes ();
+	waitforit();
 	R_ClearSprites ();
+	waitforit();
 	NetUpdate ();					// check for new console commands
+	waitforit();
 
 	// Make displayed player invisible locally
 	if (localQuakeHappening[displayplayer] && gamestate == GS_LEVEL)
@@ -873,10 +884,11 @@ void R_RenderPlayerView (player_t *player)
 	{
 		R_RenderBSPNode (numnodes-1);	// head node is the last node output
 	}
-
 	NetUpdate ();					// check for new console commands
 	R_DrawPlanes ();
 	NetUpdate ();					// check for new console commands
 	R_DrawMasked ();
 	NetUpdate ();					// check for new console commands
+	/*
+	*/
 }
